@@ -5,6 +5,7 @@
 import sgtk
 from tank_vendor import six
 from sgtk.platform.qt import QtGui, QtCore
+from pathlib import Path
 
 import maya.cmds as cmds
 import maya.mel as mel
