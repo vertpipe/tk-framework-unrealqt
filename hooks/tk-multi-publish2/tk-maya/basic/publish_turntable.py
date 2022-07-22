@@ -971,7 +971,14 @@ class MayaUnrealTurntablePublishPlugin(HookBaseClass):
         # The FBX will be exported to a temp folder
         # Another folder can be specified as long as the name has no spaces
         # Spaces are not allowed in command line Unreal Python args
-        temp_folder = tempfile.mkdtemp(suffix="temp_unreal_shotgun")
+        temp2_folder = tempfile.mkdtemp(suffix="temp_unreal_shotgun")
+        try:
+            _tmp_folder_usr, _tmp_folder_app = temp2_folder.split('AppData')
+        except:
+            raise RuntimeError("The temp_unreal_shotgun doesn't contains appdata folder")
+        home_parent = str(Path.home().parent)
+        appdata_path = '/AppData{}'.format(_tmp_folder_app)
+        temp_folder = home_parent + appdata_path
         # Store the temp folder path on the item for cleanup in finalize
         item.local_properties["temp_folder"] = temp_folder
         fbx_folder = temp_folder
@@ -1026,7 +1033,16 @@ class MayaUnrealTurntablePublishPlugin(HookBaseClass):
         # Use the unreal_setup_turntable to do this in Unreal
         self.logger.info("Setting up Unreal turntable project...")
         # Copy the Unreal project in a temp location so we can modify it
-        temp_dir = tempfile.mkdtemp()
+        temp_dir2 = tempfile.mkdtemp()
+        try:
+            _tmp_dir_usr, _tmp_app = temp_dir2.split('AppData')
+        except:
+            raise RuntimeError("It doesn't return path in appdata")
+        home_parent = str(Path.home().parent)
+        appdata_path = '/AppData{}'.format(_tmp_app)
+        temp_dir = home_parent + appdata_path
+        self.logger.debug("The temp_dir is {}".format(temp_dir))
+
         project_path, project_file = os.path.split(unreal_project_path)
         project_folder = os.path.basename(project_path)
         temp_project_dir = os.path.join(temp_dir, project_folder)
