@@ -984,9 +984,10 @@ class MayaUnrealTurntablePublishPlugin(HookBaseClass):
             _tmp_folder_usr, _tmp_folder_app = temp2_folder.split('AppData')
         except:
             raise RuntimeError("The temp_unreal_shotgun doesn't contains appdata folder")
-        home_parent = str(Path.home().parent)
-        appdata_path = '/AppData{}'.format(_tmp_folder_app)
-        temp_folder = home_parent + appdata_path
+
+        local_appdata_path = os.getenv('LOCALAPPDATA')
+        local_appdata_path = os.path.expanduser(local_appdata_path)
+        temp_folder = os.path.dirname(local_appdata_path) + _tmp_folder_app
         # Store the temp folder path on the item for cleanup in finalize
         item.local_properties["temp_folder"] = temp_folder
         fbx_folder = temp_folder
@@ -1014,6 +1015,9 @@ class MayaUnrealTurntablePublishPlugin(HookBaseClass):
             if re.search(exp, os.path.splitext(fbx_published_path)[0]):
                 fbx_name = work_name + "_" + timestamp + "_turntable.fbx"
                 fbx_output_path = os.path.join(fbx_folder, fbx_name)
+                if not os.path.exists(fbx_output_path):
+                    self.logger.debug("The temp fbx output path {} doesn't exist. Will build the path".format(fbx_output_path))
+                    os.makedirs(os.path.dirname(fbx_output_path), exist_ok=True)
                 # Make a copy of the file
                 self.logger.debug(
                     "Copying %s to %s" % (
@@ -1046,10 +1050,10 @@ class MayaUnrealTurntablePublishPlugin(HookBaseClass):
             _tmp_dir_usr, _tmp_app = temp_dir2.split('AppData')
         except:
             raise RuntimeError("It doesn't return path in appdata")
-        home_parent = str(Path.home().parent)
-        appdata_path = '/AppData{}'.format(_tmp_app)
-        temp_dir = home_parent + appdata_path
+        temp_dir = os.path.dirname(local_appdata_path) + _tmp_app
         self.logger.debug("The temp_dir is {}".format(temp_dir))
+        # Store the temp dir path on the item for cleanup in finalize
+        item.local_properties["temp_dir"] = temp_dir
 
         project_path, project_file = os.path.split(unreal_project_path)
         project_folder = os.path.basename(project_path)
@@ -1266,11 +1270,23 @@ class MayaUnrealTurntablePublishPlugin(HookBaseClass):
 
         # Delete the exported FBX and scripts from the temp folder
         # Unless DEBUG is enabled
-        if self.logger.getEffectiveLevel() > logging.DEBUG:
-            temp_folder = item.local_properties.get("temp_folder")
-            if temp_folder:
-                shutil.rmtree(temp_folder)
+        self.logger.debug("Cleaning up temp files..., the logger.getEffectiveLevel() is %s and logging.DEBUG is %s" % (
+        self.logger.getEffectiveLevel(), logging.DEBUG))
 
+        temp_folder = item.local_properties.get("temp_folder")
+        self.logger.debug("temp_folder is %s" % temp_folder)
+
+        temp_dir = item.local_properties.get("temp_dir")
+        self.logger.debug("temp_dir is %s" % temp_dir)
+
+        # if self.logger.getEffectiveLevel() > logging.DEBUG:
+
+        if temp_folder:
+            self.logger.debug("Removing temp_folder %s" % temp_folder)
+            shutil.rmtree(temp_folder)
+        if temp_dir:
+            self.logger.debug("Removing temp_dir %s" % temp_dir)
+            shutil.rmtree(temp_dir, ignore_errors=True)
         # Revive this when Unreal supports spaces in command line Python args
         # fbx_path = item.properties.get("temp_fbx_path")
         # if fbx_path:
